@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Калькулятор перекупа</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            width: 100%;
+            min-height: 100vh;
+            padding: 10px;
+            background-color: #f5f5f5;
+            overflow-x: hidden;
+            -webkit-text-size-adjust: 100%;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        h1, h2, h3 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+            padding: 10px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        button.sell-btn {
+            background-color: #2196F3;
+            margin-top: 5px;
+        }
+        
+        button.delete-btn {
+            background-color: #f44336;
+            margin-top: 5px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            font-size: 14px;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        
+        .profit-positive {
+            color: green;
+            font-weight: bold;
+        }
+        
+        .profit-negative {
+            color: red;
+            font-weight: bold;
+        }
+        
+        .summary {
+            padding: 12px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .history {
+            margin-top: 10px;
+        }
+        
+        .history-item {
+            padding: 12px;
+            background-color: white;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-size: 14px;
+        }
+        
+        .history-item.sold {
+            background-color: #e8f5e9;
+        }
+        
+        @media (min-width: 600px) {
+            .container {
+                max-width: 600px;
+            }
+            
+            .input-group {
+                flex-direction: row;
+                align-items: flex-end;
+            }
+            
+            .input-group input {
+                flex: 1;
+            }
+            
+            .input-group button {
+                width: auto;
+                min-width: 120px;
+            }
+            
+            button.sell-btn, button.delete-btn {
+                margin-top: 0;
+                margin-left: 5px;
+                width: auto;
+                min-width: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Калькулятор перекупа</h1>
+        
+        <div class="input-group">
+            <div style="flex: 1;">
+                <input type="text" id="itemName" placeholder="Название товара" required>
+                <input type="number" id="buyPrice" placeholder="Цена покупки" min="0" step="0.01" required>
+            </div>
+            <button onclick="addItem()">Добавить</button>
+        </div>
+        
+        <h2>Текущие товары</h2>
+        <table id="itemsTable">
+            <thead>
+                <tr>
+                    <th>Товар</th>
+                    <th>Цена</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Товары будут добавляться сюда -->
+            </tbody>
+        </table>
+        
+        <div class="summary">
+            <h3>Итого:</h3>
+            <p>Общая прибыль: <span id="totalProfit">0.00</span></p>
+            <p>Товаров на продажу: <span id="totalItems">0</span></p>
+            <p>Проданных товаров: <span id="soldItems">0</span></p>
+        </div>
+        
+        <div class="history">
+            <h2>История операций</h2>
+            <div id="historyList">
+                <!-- История будет добавляться сюда -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let items = [];
+        let history = [];
+        
+        function addItem() {
+            const name = document.getElementById('itemName').value;
+            const buyPrice = parseFloat(document.getElementById('buyPrice').value);
+            
+            if (!name || isNaN(buyPrice)) {
+                alert('Пожалуйста, заполните все поля корректно');
+                return;
+            }
+            
+            const item = { 
+                id: Date.now(),
+                name, 
+                buyPrice,
+                sold: false,
+                sellPrice: null,
+                profit: null
+            };
+            items.push(item);
+            
+            // Добавляем в историю
+            addHistory('purchase', item);
+            
+            updateTable();
+            updateSummary();
+            
+            // Очистка полей ввода
+            document.getElementById('itemName').value = '';
+            document.getElementById('buyPrice').value = '';
+            document.getElementById('itemName').focus();
+        }
+        
+        function sellItem(index) {
+            const sellPrice = prompt(`Введите цену продажи для "${items[index].name}":`);
+            if (sellPrice === null) return;
+            
+            const price = parseFloat(sellPrice);
+            if (isNaN(price)) {
+                alert('Пожалуйста, введите корректную цену');
+                return;
+            }
+            
+            items[index].sold = true;
+            items[index].sellPrice = price;
+            items[index].profit = price - items[index].buyPrice;
+            
+            // Добавляем в историю
+            addHistory('sale', items[index]);
+            
+            updateTable();
+            updateSummary();
+        }
+        
+        function addHistory(type, item) {
+            const historyItem = {
+                type,
+                date: new Date(),
+                item: {...item}
+            };
+            history.unshift(historyItem);
+            updateHistory();
+        }
+        
+        function updateTable() {
+            const tbody = document.querySelector('#itemsTable tbody');
+            tbody.innerHTML = '';
+            
+            // Показываем только непроданные товары
+            const unsoldItems = items.filter(item => !item.sold);
+            
+            unsoldItems.forEach((item, index) => {
+                const originalIndex = items.findIndex(i => i.id === item.id);
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>${item.buyPrice.toFixed(2)}</td>
+                    <td>
+                        <button onclick="sellItem(${originalIndex})" class="sell-btn">Продать</button>
+                        <button onclick="removeItem(${originalIndex})" class="delete-btn">Удалить</button>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+        
+        function updateHistory() {
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = '';
+            
+            // Ограничиваем количество элементов в истории для мобильных устройств
+            const maxHistoryItems = window.innerWidth < 600 ? 5 : 10;
+            const displayedHistory = history.slice(0, maxHistoryItems);
+            
+            displayedHistory.forEach(item => {
+                const historyElement = document.createElement('div');
+                historyElement.className = `history-item ${item.type === 'sale' ? 'sold' : ''}`;
+                
+                const dateStr = item.date.toLocaleString();
+                
+                if (item.type === 'purchase') {
+                    historyElement.innerHTML = `
+                        <p><strong>Покупка:</strong> ${item.item.name} за ${item.item.buyPrice.toFixed(2)} (${dateStr})</p>
+                    `;
+                } else if (item.type === 'sale') {
+                    historyElement.innerHTML = `
+                        <p><strong>Продажа:</strong> ${item.item.name} за ${item.item.sellPrice.toFixed(2)} 
+                        (куплено за ${item.item.buyPrice.toFixed(2)}, прибыль: 
+                        <span class="${item.item.profit >= 0 ? 'profit-positive' : 'profit-negative'}">
+                            ${item.item.profit.toFixed(2)}
+                        </span>) (${dateStr})</p>
+                    `;
+                } else {
+                    historyElement.innerHTML = `
+                        <p><strong>Удаление:</strong> ${item.item.name} (${dateStr})</p>
+                    `;
+                }
+                
+                historyList.appendChild(historyElement);
+            });
+        }
+        
+        function removeItem(index) {
+            if (confirm(`Удалить товар "${items[index].name}"?`)) {
+                // Добавляем в историю удаление
+                addHistory('delete', items[index]);
+                items.splice(index, 1);
+                updateTable();
+                updateSummary();
+            }
+        }
+        
+        function updateSummary() {
+            const unsoldItems = items.filter(item => !item.sold);
+            const soldItems = items.filter(item => item.sold);
+            
+            const totalProfit = soldItems.reduce((sum, item) => sum + item.profit, 0);
+            document.getElementById('totalProfit').textContent = totalProfit.toFixed(2);
+            document.getElementById('totalItems').textContent = unsoldItems.length;
+            document.getElementById('soldItems').textContent = soldItems.length;
+            
+            // Изменение цвета общей прибыли
+            const totalProfitElement = document.getElementById('totalProfit');
+            totalProfitElement.className = totalProfit >= 0 ? 'profit-positive' : 'profit-negative';
+        }
+        
+        // Обработка изменения размера экрана
+        window.addEventListener('resize', function() {
+            updateHistory();
+        });
+    </script>
+</body>
+</html>

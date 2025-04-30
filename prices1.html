@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Каталог транспорта</title>
+    <style>
+        :root {
+            --primary-bg: #f5f5f5;
+            --text-color: #333;
+            --border-color: #ddd;
+            --highlight-color: #e0e0e0;
+            --shadow: 0 2px 5px rgba(0,0,0,0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            padding: 20px;
+        }
+
+        h1, h2, h3 {
+            color: #444;
+            margin-bottom: 15px;
+        }
+
+        h1 { font-size: 24px; }
+        h2 { font-size: 20px; }
+        h3 { font-size: 18px; }
+
+        .search-container {
+            margin: 20px 0;
+            position: relative;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 12px 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 16px;
+            transition: var(--transition);
+        }
+
+        #searchInput:focus {
+            outline: none;
+            border-color: #aaa;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        }
+
+        .category-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            overflow-x: auto;
+        }
+
+        .category-tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        .category-tab.active {
+            border-bottom: 3px solid #4a6da7;
+            font-weight: bold;
+        }
+
+        .category-tab:hover {
+            background-color: #f0f0f0;
+        }
+
+        .transport-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .transport-table th, .transport-table td {
+            border: 1px solid var(--border-color);
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        .transport-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+        }
+
+        .transport-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .transport-table tr:hover {
+            background-color: var(--highlight-color);
+        }
+
+        .price-hover {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .price-hover:hover::after {
+            content: attr(data-original-price);
+            position: absolute;
+            left: 0;
+            top: 100%;
+            background: white;
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            z-index: 10;
+            white-space: nowrap;
+            box-shadow: var(--shadow);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .transport-table {
+                display: block;
+                overflow-x: auto;
+            }
+
+            .transport-table th, .transport-table td {
+                padding: 8px 10px;
+                font-size: 14px;
+            }
+
+            h1 { font-size: 20px; }
+            h2 { font-size: 18px; }
+            h3 { font-size: 16px; }
+
+            #searchInput {
+                padding: 10px 15px;
+            }
+
+            .category-tab {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+
+            .transport-table th, .transport-table td {
+                padding: 6px 8px;
+                font-size: 12px;
+            }
+
+            .category-tab {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Каталог транспорта</h1>
+        
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Поиск транспорта..." onkeyup="searchTransport()">
+        </div>
+        
+        <div class="category-tabs">
+            <div class="category-tab active" data-category="cars">Автомобили</div>
+            <div class="category-tab" data-category="motorcycles">Мотоциклы</div>
+            <div class="category-tab" data-category="boats">Лодки</div>
+            <div class="category-tab" data-category="aircraft">Самолёты</div>
+        </div>
+        
+        <div id="transportContainer">
+            <!-- Транспорт будет загружаться сюда динамически -->
+        </div>
+    </div>
+
+    <script>
+        // База данных транспорта
+        const transportData = {
+            "cars": [
+                {
+                    "name": "BAS 1111 Она",
+                    "showroom_price": "25,000 ₽",
+                    "used_price": "-",
+                    "sale_price": "17,500 ₽",
+                    "original_currency": "RUB"
+                },
+                {
+                    "name": "BAS 2107",
+                    "showroom_price": "70,000 ₽",
+                    "used_price": "-",
+                    "sale_price": "49,000 ₽",
+                    "original_currency": "RUB"
+                },
+                {
+                    "name": "BAS 2108",
+                    "showroom_price": "75,000 ₽",
+                    "used_price": "-",
+                    "sale_price": "52,500 ₽",
+                    "original_currency": "RUB"
+                },
+                {
+                    "name": "BAS 2114",
+                    "showroom_price": "300,000 ₽",
+                    "used_price": "252,000 ₽",
+                    "sale_price": "210,000 ₽",
+                    "original_currency": "RUB"
+                },
+                {
+                    "name": "BAS 2121 Ника",
+                    "showroom_price": "550,000 ₽",
+                    "used_price": "462,000 ₽",
+                    "sale_price": "385,000 ₽",
+                    "original_currency": "RUB"
+                },
+                {
+                    "name": "BAS 2170 Прикра",
+                    "showroom_price": "500,000 ₽",
+                    "used_price": "430,000 ₽",
+                    "sale_price": "350,000 ₽",
+                    "original_currency": "RUB"
+                },
+                {
+                    "name": "Aston Martin Vantage",
+                    "showroom_price": "14,500,000 ₽",
+                    "used_price": "12,516,000 ₽",
+                    "sale_price": "10,450,000 ₽",
+                    "original_currency": "RUB"
+                },
+                {
+                    "name": "Audi SS",
+                    "showroom_price": "4,400,000 ₽",
+                    "used_price": "3,696,000 ₽",
+                    "sale_price": "3,080,000 ₽",
+                    "original_currency": "RUB"
+                },
+                {
+                    "name": "Audi SS €",
+                    "showroom_price": "8,495,517 ₽",
+                    "used_price": "7,096,674 ₽",
+                    "sale_price": "5,905,562 ₽",
+                    "original_currency": "EUR"
+                },
+                {
+                    "name": "Audi RS6 €",
+                    "showroom_price": "10,778,994 ₽",
+                    "used_price": "9,055,156 ₽",
+                    "sale_price": "7,545,996 ₽",
+                    "original_currency": "EUR"
+                },
+                {
+                    "name": "Audi RS7",
+                    "showroom_price": "9,500,000 ₽",
+                    "used_price": "7,360,000 ₽",
+                    "sale_price": "6,650,000 ₽",
+                    "original_currency": "RUB"
+                },
+                {
+                    "name": "Audi R6 €",
+                    "showroom_price": "20,153,902 ₽",
+                    "used_price": "16,929,278 ₽",
+                    "sale_price": "14,107,721 ₽",
+                    "original_currency": "EUR"
+                },
+                {
+                    "name": "Bentley Continental GT",
+                    "showroom_price": "15,000,000 ₽",
+                    "used_price": "12,600,000 ₽",
+                    "sale_price": "10,500,000 ₽",
+                    "original_currency": "RUB"
+                },
+                {
+                    "name": "DMW MS E24",
+                    "showroom_price": "320,000 ₽",
+                    "used_price": "268,800 ₽",
+                    "sale_price": "224,000 ₽",
+                    "original_currency": "RUB"
+                },
+                {
+                    "name": "DMW S20 E29",
+                    "showroom_price": "400,000 ₽",
+                    "used_price": "238,000 ₽",
+                    "sale_price": "280,000 ₽",
+                    "original_currency": "RUB"
+                }
+            ],
+            "motorcycles": [
+                {
+                    "name": "Harley-Davidson Sportster",
+                    "showroom_price": "800,000 ₽",
+                    "used_price": "672,000 ₽",
+                    "sale_price": "560,000 ₽",
+                    "original_currency": "RUB"
+                },
+                {
+                    "name": "Yamaha YZF-R1",
+                    "showroom_price": "1,200,000 ₽",
+                    "used_price": "1,008,000 ₽",
+                    "sale_price": "840,000 ₽",
+                    "original_currency": "RUB"
+                }
+            ],
+            "boats": [
+                {
+                    "name": "Bayliner VR5",
+                    "showroom_price": "3,500,000 ₽",
+                    "used_price": "2,940,000 ₽",
+                    "sale_price": "2,450,000 ₽",
+                    "original_currency": "RUB"
+                },
+                {
+                    "name": "Sea Ray 270 SLX",
+                    "showroom_price": "6,800,000 ₽",
+                    "used_price": "5,712,000 ₽",
+                    "sale_price": "4,760,000 ₽",
+                    "original_currency": "RUB"
+                }
+            ],
+            "aircraft": [
+                {
+                    "name": "Cessna 172",
+                    "showroom_price": "25,000,000 ₽",
+                    "used_price": "21,000,000 ₽",
+                    "sale_price": "17,500,000 ₽",
+                    "original_currency": "RUB"
+                },
+                {
+                    "name": "Piper PA-28",
+                    "showroom_price": "30,000,000 ₽",
+                    "used_price": "25,200,000 ₽",
+                    "sale_price": "21,000,000 ₽",
+                    "original_currency": "RUB"
+                }
+            ]
+        };
+
+        // Текущая выбранная категория
+        let currentCategory = 'cars';
+
+        // Загрузка страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            // Инициализация вкладок категорий
+            const tabs = document.querySelectorAll('.category-tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    currentCategory = this.dataset.category;
+                    renderTransportTable(currentCategory);
+                });
+            });
+
+            // Первоначальная загрузка таблицы
+            renderTransportTable(currentCategory);
+        });
+
+        // Функция отрисовки таблицы транспорта
+        function renderTransportTable(category) {
+            const container = document.getElementById('transportContainer');
+            const transportList = transportData[category] || [];
+            
+            let html = `
+                <h3>${getCategoryName(category)}</h3>
+                <table class="transport-table">
+                    <thead>
+                        <tr>
+                            <th>Название</th>
+                            <th>Цена салона</th>
+                            <th>Цена б/у</th>
+                            <th>Цена продажи на б/у</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            transportList.forEach(item => {
+                html += `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td class="price-hover" data-original-price="${item.showroom_price} (${item.original_currency})">${item.showroom_price}</td>
+                        <td>${item.used_price}</td>
+                        <td>${item.sale_price}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // Функция поиска транспорта
+        function searchTransport() {
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toUpperCase();
+            const table = document.querySelector('.transport-table');
+            
+            if (!table) return;
+            
+            const tr = table.getElementsByTagName('tr');
+
+            for (let i = 1; i < tr.length; i++) {
+                const td = tr[i].getElementsByTagName('td')[0];
+                if (td) {
+                    const txtValue = td.textContent || td.innerText;
+                    if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                        tr[i].style.display = "";
+                    } else {
+                        tr[i].style.display = "none";
+                    }
+                }       
+            }
+        }
+
+        // Функция получения названия категории
+        function getCategoryName(category) {
+            const names = {
+                'cars': 'Легковые автомобили',
+                'motorcycles': 'Мотоциклы',
+                'boats': 'Лодки',
+                'aircraft': 'Самолёты'
+            };
+            return names[category] || category;
+        }
+    </script>
+</body>
+</html>
